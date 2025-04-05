@@ -9,7 +9,7 @@ REGISTRY="ghcr.io/${GITHUB_REPOSITORY,,}"  # Utilisation de ,, pour convertir en
 # Vérifier si yq est installé
 if ! command -v yq &> /dev/null; then
     echo "Installing yq..."
-    wget -qO /usr/local/bin/yq [https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64](https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64)
+    wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
     chmod +x /usr/local/bin/yq
 fi
 
