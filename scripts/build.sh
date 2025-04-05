@@ -11,7 +11,7 @@ KNOWN_IMAGES_FILE=".known_images"
 # Vérifier si yq est installé
 if ! command -v yq &> /dev/null; then
     echo "Installing yq..."
-    wget -qO /usr/local/bin/yq [https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64](https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64)
+    wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
     chmod +x /usr/local/bin/yq
 fi
 
@@ -95,7 +95,7 @@ if [ -f "$KNOWN_IMAGES_FILE" ]; then
                 curl -X DELETE \
                   -H "Accept: application/vnd.github.v3+json" \
                   -H "Authorization: token $GITHUB_TOKEN" \
-                  "[https://api.github.com/user/packages/container/$REPO/$OLD_IMAGE"](https://api.github.com/user/packages/container/$REPO/$OLD_IMAGE")
+                  "https://api.github.com/user/packages/container/$REPO/$OLD_IMAGE"
                 
                 echo "Deleted $OLD_IMAGE from registry"
             else
