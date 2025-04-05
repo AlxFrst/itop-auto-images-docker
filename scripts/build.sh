@@ -96,14 +96,14 @@ if [ -f "$KNOWN_IMAGES_FILE" ]; then
                 curl -X DELETE \
                 -H "Accept: application/vnd.github.v3+json" \
                 -H "Authorization: token $GITHUB_TOKEN" \
-                "[https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$OLD_IMAGE"](https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$OLD_IMAGE")
+                "https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$OLD_IMAGE"
                 
                 # Si c'est un repo personnel plutôt qu'une organisation
                 if [ $? -ne 0 ]; then
                     curl -X DELETE \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: token $GITHUB_TOKEN" \
-                    "[https://api.github.com/user/packages/container/$REPO%2F$OLD_IMAGE"](https://api.github.com/user/packages/container/$REPO%2F$OLD_IMAGE")
+                    "https://api.github.com/user/packages/container/$REPO%2F$OLD_IMAGE"
                 fi
                 
                 echo "Deletion request sent for $OLD_IMAGE"
