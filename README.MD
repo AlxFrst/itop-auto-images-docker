@@ -10,8 +10,10 @@ The following versions are automatically built and available in the GitHub Conta
 
 | Version | PHP Version |
 |---------|-------------|
+| itop-3.0.0 | 7.4 |
 | itop-3.0.1 | 7.4 |
 | itop-3.0.2 | 7.4 |
+| itop-3.2.1 | 8.1 |
 
 ## 🔧 How to use
 

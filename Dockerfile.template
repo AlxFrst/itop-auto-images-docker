@@ -35,7 +35,7 @@ RUN echo '<IfModule mod_expires.c>\n\
     </IfModule>\n\
     <IfModule mod_headers.c>\n\
     <FilesMatch "\\\.(gif|jpe?g|png|css|swf|js)$">\n\
-    Header set Cache-Control "max-age=2592001, public"\n\
+    Header set Cache-Control "max-age=2592000, public"\n\
     </FilesMatch>\n\
     </IfModule>' >> /etc/apache2/apache2.conf
 
