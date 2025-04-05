@@ -92,19 +92,32 @@ if [ -n "$GITHUB_TOKEN" ]; then
     REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
     
     # Récupérer la liste de tous les packages du registre
-    PACKAGES=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+    echo "Fetching packages from user API..."
+    API_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" \
                -H "Authorization: token $GITHUB_TOKEN" \
-               "https://api.github.com/user/packages?package_type=container" | 
-               jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | 
-               cut -d '/' -f 2)
+               "https://api.github.com/user/packages?package_type=container")
+    
+    # Vérifier si la réponse est un tableau JSON valide
+    if echo "$API_RESPONSE" | jq 'if type=="array" then true else false end' | grep -q true; then
+        PACKAGES=$(echo "$API_RESPONSE" | jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | cut -d '/' -f 2)
+    else
+        echo "User API response is not a valid array. Response: $(echo "$API_RESPONSE" | head -c 100)..."
+        PACKAGES=""
+    fi
     
     # Si la requête pour l'utilisateur échoue, essayer comme organisation
     if [ -z "$PACKAGES" ]; then
-        PACKAGES=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+        echo "Fetching packages from organization API..."
+        API_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" \
                    -H "Authorization: token $GITHUB_TOKEN" \
-                   "https://api.github.com/orgs/$OWNER/packages?package_type=container" | 
-                   jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | 
-                   cut -d '/' -f 2)
+                   "https://api.github.com/orgs/$OWNER/packages?package_type=container")
+        
+        if echo "$API_RESPONSE" | jq 'if type=="array" then true else false end' | grep -q true; then
+            PACKAGES=$(echo "$API_RESPONSE" | jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | cut -d '/' -f 2)
+        else
+            echo "Organization API response is not a valid array. Response: $(echo "$API_RESPONSE" | head -c 100)..."
+            PACKAGES=""
+        fi
     fi
     
     if [ -n "$PACKAGES" ]; then
