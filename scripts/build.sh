@@ -85,19 +85,28 @@ if [ -f "$KNOWN_IMAGES_FILE" ]; then
             echo "Removing obsolete image: $OLD_IMAGE"
             # Utiliser GitHub API pour supprimer l'image
             # Nécessite un token avec les permissions appropriées
+            # Remplacer les lignes de suppression autour de la ligne 80 par:
             if [ -n "$GITHUB_TOKEN" ]; then
                 OWNER_REPO=${GITHUB_REPOSITORY}
                 OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
                 REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
                 
                 echo "Deleting image $OLD_IMAGE from GitHub Container Registry"
-                # Attention: Ceci utilise l'API GitHub expérimentale pour supprimer des packages
+                # Utiliser le bon endpoint pour l'API
                 curl -X DELETE \
-                  -H "Accept: application/vnd.github.v3+json" \
-                  -H "Authorization: token $GITHUB_TOKEN" \
-                  "https://api.github.com/user/packages/container/$REPO/$OLD_IMAGE"
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                "[https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$OLD_IMAGE"](https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$OLD_IMAGE")
                 
-                echo "Deleted $OLD_IMAGE from registry"
+                # Si c'est un repo personnel plutôt qu'une organisation
+                if [ $? -ne 0 ]; then
+                    curl -X DELETE \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    -H "Authorization: token $GITHUB_TOKEN" \
+                    "[https://api.github.com/user/packages/container/$REPO%2F$OLD_IMAGE"](https://api.github.com/user/packages/container/$REPO%2F$OLD_IMAGE")
+                fi
+                
+                echo "Deletion request sent for $OLD_IMAGE"
             else
                 echo "GITHUB_TOKEN not set, skipping deletion of $OLD_IMAGE"
             fi
