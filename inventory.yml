@@ -1,0 +1,5 @@
+images:
+  - name: "itop-3.0.0"
+    itop_url: "https://deac-ams.dl.sourceforge.net/project/itop/itop/3.0.0/iTop-3.0.0-8663.zip"
+    php_version: "7.4"
+    toolkit_url: "https://github.com/Combodo/itop-toolkit-community/archive/refs/tags/3.0.0.zip"
