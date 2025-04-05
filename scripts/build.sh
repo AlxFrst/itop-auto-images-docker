@@ -15,6 +15,12 @@ if ! command -v yq &> /dev/null; then
     chmod +x /usr/local/bin/yq
 fi
 
+# Vérifier si jq est installé (nécessaire pour le parsing JSON)
+if ! command -v jq &> /dev/null; then
+    echo "Installing jq..."
+    apt-get update && apt-get install -y jq
+fi
+
 # Créer le répertoire de cache s'il n'existe pas
 mkdir -p "$CACHE_DIR"
 
@@ -78,43 +84,62 @@ for i in $(seq 0 $((IMAGE_COUNT-1))); do
     fi
 done
 
-# Détecter et supprimer les images obsolètes
-if [ -f "$KNOWN_IMAGES_FILE" ]; then
-    while read -r OLD_IMAGE; do
-        if [[ ! " ${CURRENT_IMAGES[*]} " =~ " ${OLD_IMAGE} " ]]; then
-            echo "Removing obsolete image: $OLD_IMAGE"
-            # Utiliser GitHub API pour supprimer l'image
-            # Nécessite un token avec les permissions appropriées
-            # Remplacer les lignes de suppression autour de la ligne 80 par:
-            if [ -n "$GITHUB_TOKEN" ]; then
-                OWNER_REPO=${GITHUB_REPOSITORY}
-                OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
-                REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
+# Vérifier et supprimer les images obsolètes du registre
+echo "Checking for obsolete images in registry..."
+if [ -n "$GITHUB_TOKEN" ]; then
+    OWNER_REPO=${GITHUB_REPOSITORY}
+    OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
+    REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
+    
+    # Récupérer la liste de tous les packages du registre
+    PACKAGES=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+               -H "Authorization: token $GITHUB_TOKEN" \
+               "https://api.github.com/user/packages?package_type=container" | 
+               jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | 
+               cut -d '/' -f 2)
+    
+    # Si la requête pour l'utilisateur échoue, essayer comme organisation
+    if [ -z "$PACKAGES" ]; then
+        PACKAGES=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+                   -H "Authorization: token $GITHUB_TOKEN" \
+                   "https://api.github.com/orgs/$OWNER/packages?package_type=container" | 
+                   jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | 
+                   cut -d '/' -f 2)
+    fi
+    
+    if [ -n "$PACKAGES" ]; then
+        echo "Found packages in registry: $PACKAGES"
+        
+        # Pour chaque package, vérifier s'il est dans l'inventaire actuel
+        for PACKAGE in $PACKAGES; do
+            if [[ ! " ${CURRENT_IMAGES[*]} " =~ " ${PACKAGE} " ]]; then
+                echo "Removing obsolete image: $PACKAGE"
                 
-                echo "Deleting image $OLD_IMAGE from GitHub Container Registry"
-                # Utiliser le bon endpoint pour l'API
+                # Essayer de supprimer comme package personnel
                 curl -X DELETE \
-                -H "Accept: application/vnd.github.v3+json" \
-                -H "Authorization: token $GITHUB_TOKEN" \
-                "https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$OLD_IMAGE"
-                
-                # Si c'est un repo personnel plutôt qu'une organisation
-                if [ $? -ne 0 ]; then
-                    curl -X DELETE \
                     -H "Accept: application/vnd.github.v3+json" \
                     -H "Authorization: token $GITHUB_TOKEN" \
-                    "https://api.github.com/user/packages/container/$REPO%2F$OLD_IMAGE"
-                fi
+                    "https://api.github.com/user/packages/container/$REPO%2F$PACKAGE"
                 
-                echo "Deletion request sent for $OLD_IMAGE"
+                # Si ça ne fonctionne pas, essayer comme package d'organisation
+                curl -X DELETE \
+                    -H "Accept: application/vnd.github.v3+json" \
+                    -H "Authorization: token $GITHUB_TOKEN" \
+                    "https://api.github.com/orgs/$OWNER/packages/container/$REPO%2F$PACKAGE"
+                
+                echo "Deletion request sent for $PACKAGE"
             else
-                echo "GITHUB_TOKEN not set, skipping deletion of $OLD_IMAGE"
+                echo "Package $PACKAGE is in inventory, keeping it"
             fi
-        fi
-    done < "$KNOWN_IMAGES_FILE"
+        done
+    else
+        echo "No packages found in registry or API access error"
+    fi
+else
+    echo "GITHUB_TOKEN not set, skipping registry cleanup"
 fi
 
-# Enregistrer la liste actuelle des images
+# Enregistrer la liste actuelle des images (pour compatibilité)
 printf "%s\n" "${CURRENT_IMAGES[@]}" > "$KNOWN_IMAGES_FILE"
 
 echo "Build process completed successfully"
