@@ -102,22 +102,17 @@ if [ -n "$GITHUB_TOKEN" ]; then
     
     # Extraire les noms des packages
     if echo "$API_RESPONSE" | jq -e '.data.user.packages' > /dev/null; then
+    # Remplacer les lignes 105-122 par ceci:
         echo "Successfully queried user packages"
-        PACKAGES=$(echo "$API_RESPONSE" | jq -r '.data.user.packages.nodes[].name' | grep "^$REPO\/" | cut -d '/' -f 2)
-    else
-        echo "Failed to fetch user packages, trying organization..."
-        # Essayer comme organisation
-        API_RESPONSE=$(curl -s -X POST \
-                    -H "Authorization: token $GITHUB_TOKEN" \
-                    -H "Content-Type: application/json" \
--d '{"query": "query { organization(login: \"'$OWNER'\") { packages(first: 100, packageType: DOCKER) { nodes { name } } } }"}' \
-                    "https://api.github.com/graphql")
+        PACKAGES=$(echo "$API_RESPONSE" | jq -r '.data.user.packages.nodes[].name' | grep -i "^$REPO" | cut -d '/' -f 2 || echo "")
         
-        if echo "$API_RESPONSE" | jq -e '.data.organization.packages' > /dev/null; then
-            echo "Successfully queried organization packages"
-            PACKAGES=$(echo "$API_RESPONSE" | jq -r '.data.organization.packages.nodes[].name' | grep "^$REPO\/" | cut -d '/' -f 2)
-        else
-            echo "Failed to fetch organization packages. Error: $(echo "$API_RESPONSE" | jq -r '.errors[].message')"
+        if [ -z "$PACKAGES" ]; then
+            echo "No repository-specific packages found for user"
+            # Récupérer tous les packages sans filtre de nom pour débogage
+            ALL_PACKAGES=$(echo "$API_RESPONSE" | jq -r '.data.user.packages.nodes[].name' || echo "")
+            if [ -n "$ALL_PACKAGES" ]; then
+                echo "Available packages: $ALL_PACKAGES"
+            fi
             PACKAGES=""
         fi
     fi
