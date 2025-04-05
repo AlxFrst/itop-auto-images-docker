@@ -3,19 +3,20 @@ name: Build and Push iTop Docker Images
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'inventory.yml'
-      - 'Dockerfile.template'
-      - '.github/workflows/build-and-push.yml'
-      - 'scripts/**'
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Exécution hebdomadaire (dimanche à minuit)
+
+permissions:
+  contents: read
+  packages: write  # Cette permission est nécessaire pour publier des images
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -31,3 +32,5 @@ jobs:
         run: |
           chmod +x ./scripts/build.sh
           ./scripts/build.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
