@@ -4,7 +4,7 @@ set -e
 # Générer des Dockerfiles et construire des images selon l'inventaire
 INVENTORY_FILE="inventory.yml"
 TEMPLATE_FILE="Dockerfile.template"
-REGISTRY="ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]')"
+REGISTRY="ghcr.io/${GITHUB_REPOSITORY,,}"  # Utilisation de ,, pour convertir en minuscules
 
 # Vérifier si yq est installé
 if ! command -v yq &> /dev/null; then
