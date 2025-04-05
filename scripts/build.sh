@@ -91,31 +91,33 @@ if [ -n "$GITHUB_TOKEN" ]; then
     OWNER=$(echo $OWNER_REPO | cut -d '/' -f 1)
     REPO=$(echo $OWNER_REPO | cut -d '/' -f 2)
     
-    # Récupérer la liste de tous les packages du registre
-    echo "Fetching packages from user API..."
-    API_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" \
-               -H "Authorization: token $GITHUB_TOKEN" \
-               "https://api.github.com/user/packages?package_type=container")
+# Remplacer les lignes 93-120 par ceci:
+    echo "Fetching packages from GitHub Container Registry API..."
+    # Utiliser l'API GraphQL pour récupérer les packages
+    API_RESPONSE=$(curl -s -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"query": "query { user { packages(first: 100, packageType: CONTAINER) { nodes { name } } } }"}' \
+                "https://api.github.com/graphql")
     
-    # Vérifier si la réponse est un tableau JSON valide
-    if echo "$API_RESPONSE" | jq 'if type=="array" then true else false end' | grep -q true; then
-        PACKAGES=$(echo "$API_RESPONSE" | jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | cut -d '/' -f 2)
+    # Extraire les noms des packages
+    if echo "$API_RESPONSE" | jq -e '.data.user.packages' > /dev/null; then
+        echo "Successfully queried user packages"
+        PACKAGES=$(echo "$API_RESPONSE" | jq -r '.data.user.packages.nodes[].name' | grep "^$REPO\/" | cut -d '/' -f 2)
     else
-        echo "User API response is not a valid array. Response: $(echo "$API_RESPONSE" | head -c 100)..."
-        PACKAGES=""
-    fi
-    
-    # Si la requête pour l'utilisateur échoue, essayer comme organisation
-    if [ -z "$PACKAGES" ]; then
-        echo "Fetching packages from organization API..."
-        API_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" \
-                   -H "Authorization: token $GITHUB_TOKEN" \
-                   "https://api.github.com/orgs/$OWNER/packages?package_type=container")
+        echo "Failed to fetch user packages, trying organization..."
+        # Essayer comme organisation
+        API_RESPONSE=$(curl -s -X POST \
+                    -H "Authorization: token $GITHUB_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d '{"query": "query { organization(login: \"'$OWNER'\") { packages(first: 100, packageType: CONTAINER) { nodes { name } } } }"}' \
+                    "https://api.github.com/graphql")
         
-        if echo "$API_RESPONSE" | jq 'if type=="array" then true else false end' | grep -q true; then
-            PACKAGES=$(echo "$API_RESPONSE" | jq -r '.[] | select(.name | startswith("'$REPO'")) | .name' | cut -d '/' -f 2)
+        if echo "$API_RESPONSE" | jq -e '.data.organization.packages' > /dev/null; then
+            echo "Successfully queried organization packages"
+            PACKAGES=$(echo "$API_RESPONSE" | jq -r '.data.organization.packages.nodes[].name' | grep "^$REPO\/" | cut -d '/' -f 2)
         else
-            echo "Organization API response is not a valid array. Response: $(echo "$API_RESPONSE" | head -c 100)..."
+            echo "Failed to fetch organization packages. Error: $(echo "$API_RESPONSE" | jq -r '.errors[].message')"
             PACKAGES=""
         fi
     fi
