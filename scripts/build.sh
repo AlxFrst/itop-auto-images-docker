@@ -97,7 +97,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
     API_RESPONSE=$(curl -s -X POST \
                 -H "Authorization: token $GITHUB_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d '{"query": "query { user { packages(first: 100, packageType: CONTAINER) { nodes { name } } } }"}' \
+                -d '{"query": "query { user { packages(first: 100, packageType: DOCKER) { nodes { name } } } }"}' \
                 "https://api.github.com/graphql")
     
     # Extraire les noms des packages
@@ -110,7 +110,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
         API_RESPONSE=$(curl -s -X POST \
                     -H "Authorization: token $GITHUB_TOKEN" \
                     -H "Content-Type: application/json" \
-                    -d '{"query": "query { organization(login: \"'$OWNER'\") { packages(first: 100, packageType: CONTAINER) { nodes { name } } } }"}' \
+-d '{"query": "query { organization(login: \"'$OWNER'\") { packages(first: 100, packageType: DOCKER) { nodes { name } } } }"}' \
                     "https://api.github.com/graphql")
         
         if echo "$API_RESPONSE" | jq -e '.data.organization.packages' > /dev/null; then
