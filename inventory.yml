@@ -15,7 +15,7 @@ images:
     itop_url: "https://deac-riga.dl.sourceforge.net/project/itop/itop/3.2.1/iTop-3.2.1-16429.zip"
     php_version: "8.1"
     toolkit_url: "https://github.com/Combodo/itop-toolkit-community/archive/refs/tags/3.0.0.zip"
-- name: "itop-3.2.1-1"
+  - name: "itop-3.2.1-1"
     itop_url: "https://netix.dl.sourceforge.net/project/itop/itop/3.2.1-1/iTop-3.2.1-1-16749.zip"
     php_version: "8.1"
     toolkit_url: "https://github.com/Combodo/itop-toolkit-community/archive/refs/tags/3.0.0.zip"
